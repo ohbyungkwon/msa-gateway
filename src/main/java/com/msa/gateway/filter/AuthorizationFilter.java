@@ -4,6 +4,7 @@ import io.jsonwebtoken.Jwts;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang.SerializationUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.core.env.Environment;
@@ -21,6 +22,8 @@ import java.util.Base64;
 @Slf4j
 @Component
 public class AuthorizationFilter extends AbstractGatewayFilterFactory<AuthorizationFilter.Config> {
+    @Value("${jwt.secret}")
+    private String tokenKey;
 
     public static class Config{
 
@@ -57,7 +60,7 @@ public class AuthorizationFilter extends AbstractGatewayFilterFactory<Authorizat
 
     private boolean isValidateToken(String token, String compareToken) {
         try {
-            Object subject = Jwts.parser().setSigningKey("user-token")
+            Object subject = Jwts.parser().setSigningKey(tokenKey)
                     .parseClaimsJws(token)
                     .getBody()
                     .getSubject();
