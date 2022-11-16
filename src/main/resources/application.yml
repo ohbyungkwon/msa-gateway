@@ -1,0 +1,75 @@
+server:
+  port: 8080
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+
+spring:
+  application:
+    name: gatewayService
+  cloud:
+    config:
+      uri: http://localhost:8888
+      name: ecommerce
+    gateway:
+      default-filters: #모든 요청에 전역적으로 들어가는 필터
+        - name: GlobalFilter
+          args: #args 정의하려면 filter에 name항목 필수
+            baseMessage: Call Global Filter~!!
+            preLogger: true
+            postLogger: true
+      routes:
+        - id: user-service
+          uri: lb://USERMICROSERVICE
+          predicates:
+            - Path=/user-service/**
+            - Method=POST
+          filters:
+            - RemoveRequestHeader=Cookie
+            - RewritePath=/user-service/(?<segment>.*), /$\{segment}
+        - id: user-service
+          uri: lb://USERMICROSERVICE
+          predicates:
+            - Path=/user-service/**
+            - Method=GET
+          filters:
+            - RemoveRequestHeader=Cookie
+            - RewritePath=/user-service/(?<segment>.*), /$\{segment}
+            - AuthorizationFilter
+        - id: user-service
+          uri: lb://USERMICROSERVICE
+          predicates:
+            - Path=/user-service/actuator/**
+            - Method=GET, POST
+          filters:
+            - RemoveRequestHeader=Cookie
+            - RewritePath=/user-service/(?<segment>.*), /$\{segment}
+            - AuthorizationFilter
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, beans, httpTrace, refresh
+
+#      routes:
+#        - id: userService-1
+#          uri: http://localhost:9001
+#          predicates:
+#            - Path=/first-server/**
+#          filters:
+#            - AddRequestHeader=req-header, first-req-header
+#            - AddResponseHeader=res-header, first-res-header
+#        - id: userService-2
+#          uri: http://localhost:9002
+#          predicates:
+#            - Path=/second-server/**
+#            - AddRequestHeader=req-header, second-req-header
+#            - AddResponseHeader=res-header, second-res-header
+#localhost:8080/first-server/welcome -> localhost:9001/first-server/welcome
+#localhost:8080/second-server/welcome -> localhost:9002/second-server/welcome
+
