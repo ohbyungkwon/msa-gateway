@@ -26,7 +26,7 @@ spring:
         - id: user-service
           uri: lb://USERMICROSERVICE
           predicates:
-            - Path=/user-service/**
+            - Path=/user-service/login
             - Method=POST
           filters:
             - RemoveRequestHeader=Cookie
@@ -44,7 +44,7 @@ spring:
           uri: lb://USERMICROSERVICE
           predicates:
             - Path=/user-service/actuator/**
-            - Method=GET, POST
+            - Method=GET,POST
           filters:
             - RemoveRequestHeader=Cookie
             - RewritePath=/user-service/(?<segment>.*), /$\{segment}
@@ -54,7 +54,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health, beans, httpTrace, refresh
+        include: health, beans, httpTrace, refresh, env, bus-refresh
 
 #      routes:
 #        - id: userService-1
