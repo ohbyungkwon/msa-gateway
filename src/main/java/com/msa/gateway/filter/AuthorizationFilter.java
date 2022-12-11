@@ -3,11 +3,10 @@ package com.msa.gateway.filter;
 import io.jsonwebtoken.Jwts;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.ObjectUtils;
-import org.apache.commons.lang.SerializationUtils;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
-import org.springframework.core.env.Environment;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -16,12 +15,14 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
-import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Optional;
 
 @Slf4j
 @Component
 public class AuthorizationFilter extends AbstractGatewayFilterFactory<AuthorizationFilter.Config> {
+    private static final String AUTH_CONTENT_KEY = "AuthContent";
     @Value("${jwt.secret}")
     private String tokenKey;
 
@@ -39,17 +40,22 @@ public class AuthorizationFilter extends AbstractGatewayFilterFactory<Authorizat
             ServerHttpRequest request = exchange.getRequest();
             HttpHeaders httpHeaders = request.getHeaders();
 
-            String authContentKey = "AuthContent";
             String key = HttpHeaders.AUTHORIZATION;
             if(!httpHeaders.containsKey(key)){
                 return AuthorizationError(exchange, "need token", HttpStatus.UNAUTHORIZED);
             }
-            if(!httpHeaders.containsKey(authContentKey)){
+            if(!httpHeaders.containsKey(AUTH_CONTENT_KEY)){
                 return AuthorizationError(exchange, "need AuthContent", HttpStatus.UNAUTHORIZED);
             }
 
-            String token = httpHeaders.get(key).get(0);
-            String compareToken = httpHeaders.get(authContentKey).get(0);
+            String token = Optional.ofNullable(httpHeaders.get(key))
+                    .orElseGet(ArrayList::new)
+                    .get(0);
+
+            String compareToken = Optional.ofNullable(httpHeaders.get(AUTH_CONTENT_KEY))
+                    .orElseGet(ArrayList::new)
+                    .get(0);
+
             if(!isValidateToken(token, compareToken)){
                 return AuthorizationError(exchange, "check token", HttpStatus.UNAUTHORIZED);
             }
@@ -59,6 +65,10 @@ public class AuthorizationFilter extends AbstractGatewayFilterFactory<Authorizat
     }
 
     private boolean isValidateToken(String token, String compareToken) {
+        if(StringUtils.isEmpty(token) || StringUtils.isEmpty(compareToken)){
+            return false;
+        }
+
         try {
             Object subject = Jwts.parser().setSigningKey(tokenKey)
                     .parseClaimsJws(token)

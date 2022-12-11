@@ -49,6 +49,32 @@ spring:
             - RemoveRequestHeader=Cookie
             - RewritePath=/user-service/(?<segment>.*), /$\{segment}
             - AuthorizationFilter
+        - id: product-service
+          uri: lb://PRODUCTMICROSERVICE
+          predicates:
+            - Path=/product-service/**
+            - Method=GET
+          filters:
+            - RemoveRequestHeader=Cookie
+            - RewritePath=/user-service/(?<segment>.*), /$\{segment}
+        - id: product-service
+          uri: lb://PRODUCTMICROSERVICE
+          predicates:
+            - Path=/product-service/**
+            - Method=POST,DELETE
+          filters:
+            - RemoveRequestHeader=Cookie
+            - RewritePath=/user-service/(?<segment>.*), /$\{segment}
+            - AuthorizationFilter
+        - id: order-service
+          uri: lb://ORDERMICROSERVICE
+          predicates:
+            - Path=/order-service/**
+            - Method=GET,POST,DELETE
+          filters:
+            - RemoveRequestHeader=Cookie
+            - RewritePath=/user-service/(?<segment>.*), /$\{segment}
+            - AuthorizationFilter
 
 management:
   endpoints:
